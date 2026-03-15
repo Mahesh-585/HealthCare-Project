@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PraanAI — Patient Intake | Emergency Triage System</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --red:       #C8102E;
+      --red-dark:  #9B0B22;
+      --red-light: #F9E8EB;
+      --navy:      #0A1628;
+      --navy2:     #112240;
+      --blue:      #1565C0;
+      --teal:      #00796B;
+      --white:     #FFFFFF;
+      --gray-50:   #F8FAFC;
+      --gray-100:  #F1F5F9;
+      --gray-200:  #E2E8F0;
+      --gray-400:  #94A3B8;
+      --gray-600:  #475569;
+      --gray-800:  #1E293B;
+      --success:   #16A34A;
+      --warning:   #D97706;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+    }
+
+    /* ── Top Bar ── */
+    .topbar {
+      background: var(--navy);
+      color: var(--gray-400);
+      font-size: 12px;
+      padding: 6px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .topbar span { display: flex; align-items: center; gap: 6px; }
+    .topbar .dot { width: 7px; height: 7px; border-radius: 50%; background: #22C55E; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ── Header ── */
+    header {
+      background: var(--navy);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 68px;
+      border-bottom: 3px solid var(--red);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-lg);
+    }
+    .logo { display: flex; align-items: center; gap: 14px; }
+    .logo-icon {
+      width: 42px; height: 42px;
+      background: var(--red);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .logo-text h1 { font-size: 18px; font-weight: 700; color: var(--white); letter-spacing: -0.3px; }
+    .logo-text p { font-size: 11px; color: var(--gray-400); letter-spacing: 0.5px; text-transform: uppercase; }
+
+    nav { display: flex; gap: 4px; }
+    nav a {
+      color: var(--gray-400);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    nav a:hover { background: rgba(255,255,255,0.08); color: var(--white); }
+    nav a.active { background: var(--red); color: var(--white); }
+
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .time-badge {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--white);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+    }
+
+    /* ── Layout ── */
+    .page { display: flex; min-height: calc(100vh - 100px); }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 260px;
+      background: var(--white);
+      border-right: 1px solid var(--gray-200);
+      padding: 24px 0;
+      flex-shrink: 0;
+    }
+    .sidebar-section { padding: 0 16px 24px; }
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--gray-400);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 0 8px;
+      margin-bottom: 8px;
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--gray-600);
+      text-decoration: none;
+    }
+    .sidebar-item:hover { background: var(--gray-100); color: var(--gray-800); }
+    .sidebar-item.active { background: var(--red-light); color: var(--red); }
+    .sidebar-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-badge {
+      margin-left: auto;
+      background: var(--red);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+    .sidebar-divider { height: 1px; background: var(--gray-200); margin: 8px 16px 16px; }
+
+    /* ── Main Content ── */
+    .main {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 28px;
+    }
+    .page-title h2 { font-size: 22px; font-weight: 700; color: var(--gray-800); }
+    .page-title p { font-size: 13px; color: var(--gray-400); margin-top: 3px; }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-bottom: 6px;
+    }
+    .breadcrumb span { color: var(--gray-800); font-weight: 500; }
+
+    /* ── Alert Banner ── */
+    .alert-banner {
+      background: linear-gradient(135deg, #FFF3CD, #FFF8E1);
+      border: 1px solid #F59E0B;
+      border-left: 4px solid #F59E0B;
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: #92400E;
+    }
+
+    /* ── Form Card ── */
+    .form-card {
+      background: var(--white);
+      border-radius: 14px;
+      border: 1px solid var(--gray-200);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .form-card-header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .form-card-header .icon-box {
+      width: 44px; height: 44px;
+      background: rgba(200,16,46,0.8);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .form-card-header h3 { font-size: 16px; font-weight: 700; color: var(--white); }
+    .form-card-header p { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+    .form-card-header .badge {
+      margin-left: auto;
+      background: rgba(200,16,46,0.3);
+      border: 1px solid rgba(200,16,46,0.5);
+      color: #FFB3BE;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #FFB3BE; animation: pulse 1.5s infinite; }
+
+    .form-body { padding: 28px; }
+
+    /* ── Section Divider ── */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin: 24px 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+    /* ── Grid ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .col-span-2 { grid-column: span 2; }
+    .col-span-3 { grid-column: span 3; }
+
+    /* ── Form Fields ── */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-600);
+      letter-spacing: 0.2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .field label .req { color: var(--red); }
+    .field label .hint {
+      font-weight: 400;
+      color: var(--gray-400);
+      font-size: 11px;
+    }
+
+    .field input, .field select, .field textarea {
+      height: 42px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 0 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--gray-800);
+      background: var(--white);
+      transition: all 0.2s;
+      outline: none;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(200,16,46,0.08);
+    }
+    .field input::placeholder { color: var(--gray-400); }
+    .field .input-unit {
+      position: relative;
+    }
+    .field .input-unit input { padding-right: 48px; }
+    .field .unit-label {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-400);
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ── Vital Signs Grid ── */
+    .vital-card {
+      background: var(--gray-50);
+      border: 1.5px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .vital-card:focus-within {
+      border-color: var(--red);
+      background: var(--red-light);
+      box-shadow: 0 0 0 3px rgba(200,16,46,0.06);
+    }
+    .vital-card-top { display: flex; align-items: center; gap: 8px; }
+    .vital-icon {
+      width: 30px; height: 30px;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .vital-icon.red { background: #FFE4E8; }
+    .vital-icon.blue { background: #DBEAFE; }
+    .vital-icon.green { background: #DCFCE7; }
+    .vital-icon.orange { background: #FEF3C7; }
+    .vital-icon.purple { background: #F3E8FF; }
+
+    .vital-label { font-size: 12px; font-weight: 600; color: var(--gray-600); }
+    .vital-normal { font-size: 10px; color: var(--gray-400); font-family: 'DM Mono', monospace; }
+    .vital-card input {
+      height: 38px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 7px;
+      padding: 0 40px 0 12px;
+      font-family: 'DM Mono', monospace;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--gray-800);
+      background: var(--white);
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+    .vital-card input:focus { border-color: var(--red); }
+
+    /* ── Pain Slider ── */
+    .pain-slider-wrap { padding: 8px 0; }
+    .pain-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--gray-400); margin-bottom: 6px; }
+    input[type=range] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(to right, #22C55E 0%, #F59E0B 50%, #EF4444 100%);
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      border: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      background: var(--white);
+      border: 3px solid var(--red);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(200,16,46,0.3);
+    }
+    .pain-value {
+      text-align: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--red);
+      margin-top: 8px;
+    }
+
+    /* ── Submit Button ── */
+    .form-footer {
+      padding: 20px 28px;
+      background: var(--gray-50);
+      border-top: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-submit {
+      background: var(--red);
+      color: var(--white);
+      border: none;
+      padding: 0 32px;
+      height: 46px;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s;
+      letter-spacing: 0.2px;
+    }
+    .btn-submit:hover { background: var(--red-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(200,16,46,0.35); }
+    .btn-submit:active { transform: translateY(0); }
+    .btn-clear {
+      background: transparent;
+      color: var(--gray-600);
+      border: 1.5px solid var(--gray-200);
+      padding: 0 20px;
+      height: 46px;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-clear:hover { border-color: var(--gray-400); color: var(--gray-800); }
+
+    .footer-note {
+      font-size: 12px;
+      color: var(--gray-400);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Result Panel ── */
+    .result-panel {
+      display: none;
+      margin-top: 20px;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    .result-panel.show { display: block; }
+    .result-header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .result-esi {
+      width: 60px; height: 60px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; font-weight: 900;
+      font-family: 'DM Mono', monospace;
+      flex-shrink: 0;
+    }
+    .result-info h3 { font-size: 20px; font-weight: 800; }
+    .result-info p { font-size: 13px; opacity: 0.8; margin-top: 3px; }
+    .result-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 10px;
+    }
+    .btn-dashboard {
+      background: rgba(255,255,255,0.2);
+      border: 1.5px solid rgba(255,255,255,0.4);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-dashboard:hover { background: rgba(255,255,255,0.3); }
+
+    /* ── Right Panel ── */
+    .right-panel { width: 280px; padding: 24px; flex-shrink: 0; }
+    .info-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .info-card h4 { font-size: 12px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; }
+    .esi-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .esi-item:last-child { border-bottom: none; }
+    .esi-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+    .esi-item-text { font-size: 13px; font-weight: 500; color: var(--gray-700); }
+    .esi-item-sub { font-size: 11px; color: var(--gray-400); }
+    .esi-item-time { margin-left: auto; font-size: 11px; font-weight: 600; font-family: 'DM Mono', monospace; }
+
+    /* ESI colors */
+    .esi-1, .dot-1 { background: #7C3AED; }
+    .esi-2, .dot-2 { background: #DC2626; }
+    .esi-3, .dot-3 { background: #D97706; }
+    .esi-4, .dot-4 { background: #16A34A; }
+    .esi-5, .dot-5 { background: #6B7280; }
+
+    .result-orange { background: linear-gradient(135deg, #D97706, #B45309); }
+    .result-red { background: linear-gradient(135deg, #DC2626, #991B1B); }
+    .result-yellow { background: linear-gradient(135deg, #D97706, #92400E); }
+    .result-green { background: linear-gradient(135deg, #16A34A, #14532D); }
+    .result-gray { background: linear-gradient(135deg, #6B7280, #374151); }
+
+    #clock { font-family: 'DM Mono', monospace; }
+
+    /* ── NA Checkbox ── */
+    .na-check {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--gray-400);
+      cursor: pointer; margin-top: 6px;
+      padding: 4px 6px; border-radius: 6px;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .na-check:hover { background: var(--gray-100); color: var(--gray-600); }
+    .na-check input[type=checkbox] { accent-color: var(--warning); cursor: pointer; width: 11px; height: 11px; transform: scale(0.8); }
+
+    .vital-card.na-active {
+      background: #FFFBEB;
+      border-color: #F59E0B;
+    }
+    .vital-card.na-active input {
+      background: #FEF3C7 !important;
+      color: #92400E !important;
+      border-color: #F59E0B;
+      font-style: italic;
+    }
+    .na-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #FEF3C7; color: #D97706;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <span><span class="dot"></span> System Online — PraanAI Triage Engine Active</span>
+  <span>🏥 Government General Hospital, Hyderabad &nbsp;|&nbsp; Emergency Department</span>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏥</div>
+    <div class="logo-text">
+      <h1>PraanAI</h1>
+      <p>Emergency Triage Management System</p>
+    </div>
+  </div>
+  <nav>
+    <a href="/" class="active">Patient Intake</a>
+    <a href="/dashboard">Live Dashboard</a>
+    <a href="/search">Search Patients</a>
+    <a href="/reports">Reports</a>
+  </nav>
+  <div class="header-right">
+    <div class="time-badge" id="clock">--:--:--</div>
+  </div>
+</header>
+
+<!-- Page -->
+<div class="page">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Quick Actions</div>
+      <a class="sidebar-item active" href="/">
+        <span class="icon">📋</span> New Patient Intake
+      </a>
+      <a class="sidebar-item" href="/dashboard">
+        <span class="icon">📊</span> Live Queue
+        <span class="sidebar-badge">Live</span>
+      </a>
+      <a class="sidebar-item" href="#">
+        <span class="icon">🔍</span> Search Patient
+      </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">ESI Reference</div>
+      <div style="padding: 0 8px;">
+        <div class="esi-item">
+          <div class="esi-dot dot-2"></div>
+          <div>
+            <div class="esi-item-text">ESI 2 — Emergent</div>
+            <div class="esi-item-sub">Within 10 min</div>
+          </div>
+          <div class="esi-item-time" style="color:#DC2626">10m</div>
+        </div>
+        <div class="esi-item">
+          <div class="esi-dot dot-3"></div>
+          <div>
+            <div class="esi-item-text">ESI 3 — Urgent</div>
+            <div class="esi-item-sub">Within 30 min</div>
+          </div>
+          <div class="esi-item-time" style="color:#D97706">30m</div>
+        </div>
+        <div class="esi-item">
+          <div class="esi-dot dot-4"></div>
+          <div>
+            <div class="esi-item-text">ESI 4 — Less Urgent</div>
+            <div class="esi-item-sub">Within 1 hour</div>
+          </div>
+          <div class="esi-item-time" style="color:#16A34A">1h</div>
+        </div>
+        <div class="esi-item">
+          <div class="esi-dot dot-5"></div>
+          <div>
+            <div class="esi-item-text">ESI 5 — Non Urgent</div>
+            <div class="esi-item-sub">Within 2 hours</div>
+          </div>
+          <div class="esi-item-time" style="color:#6B7280">2h</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Normal Ranges</div>
+      <div style="padding: 0 8px; font-size:12px; color: var(--gray-600); line-height: 2;">
+        <div>🩸 BP: 90–120 / 60–80</div>
+        <div>❤️ HR: 60–100 bpm</div>
+        <div>🌡️ Temp: 36.1–37.2 °C</div>
+        <div>💨 RR: 12–20 /min</div>
+        <div>🫁 SpO2: 95–100%</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="breadcrumb">
+      🏠 Home <span>›</span> Emergency Department <span>›</span> <span>Patient Intake</span>
+    </div>
+    <div class="page-header">
+      <div class="page-title">
+        <h2>New Patient Intake</h2>
+        <p>Complete all fields to generate AI triage assessment</p>
+      </div>
+    </div>
+
+    <div class="alert-banner">
+      ⚠️ <strong>Nurse Station Alert:</strong> Ensure all vitals are measured using bedside devices before submission. AI triage result will appear instantly after submission.
+    </div>
+
+    <!-- Form -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <div class="icon-box">🧑‍⚕️</div>
+        <div>
+          <h3>Patient Assessment Form</h3>
+          <p>Emergency Triage — Casualty Ward Intake</p>
+        </div>
+        <div class="badge">
+          <span class="badge-dot"></span> AI Engine Ready
+        </div>
+      </div>
+
+      <div class="form-body">
+
+        <!-- Patient Info -->
+        <div class="section-title">Patient Information</div>
+        <div class="grid-3">
+          <div class="field col-span-2">
+            <label>Full Name <span class="req">*</span></label>
+            <input id="name" type="text" placeholder="Enter patient full name"/>
+          </div>
+          <div class="field">
+            <label>Age <span class="req">*</span> <span class="hint">(years)</span></label>
+            <div class="input-unit">
+              <input id="age" type="number" placeholder="e.g. 45"/>
+              <span class="unit-label">yrs</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Arrival Mode <span class="req">*</span></label>
+            <select id="arrival_mode">
+              <option value="1">🚶 Walk-in</option>
+              <option value="2">🚑 Ambulance</option>
+              <option value="3">🏥 Referred</option>
+            </select>
+          </div>
+          <div class="field col-span-2">
+            <label>Chief Complaint <span class="req">*</span></label>
+            <input id="chief_complain" type="text" placeholder="e.g. chest pain, high fever, difficulty breathing"/>
+          </div>
+        </div>
+
+        <!-- Pain Assessment -->
+        <div class="section-title">Pain Assessment</div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Pain Present? <span class="req">*</span></label>
+            <select id="pain">
+              <option value="1">✅ Yes — Pain reported</option>
+              <option value="2">❌ No — No pain</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>NRS Pain Scale <span class="req">*</span> <span class="hint">(0 = none, 10 = severe)</span></label>
+            <div class="pain-slider-wrap">
+              <div class="pain-labels"><span>0 None</span><span>5 Moderate</span><span>10 Severe</span></div>
+              <input type="range" id="nrs_pain" min="0" max="10" value="0" oninput="document.getElementById('pain_val').textContent=this.value"/>
+              <div class="pain-value" id="pain_val">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vital Signs -->
+        <div class="section-title">Vital Signs
+          <span style="font-size:10px;color:var(--gray-400);font-weight:400;text-transform:none;letter-spacing:0">
+            ⚠️ Tick "Device N/A" if machine is unavailable — AI will use safe fallback values
+          </span>
+        </div>
+        <div class="grid-3">
+
+          <div class="vital-card" id="card_sbp">
+            <div class="vital-card-top">
+              <div class="vital-icon red">🩸</div>
+              <div>
+                <div class="vital-label">Systolic BP</div>
+                <div class="vital-normal">Normal: 90–120</div>
+              </div>
+            </div>
+            <div class="input-unit" style="position:relative">
+              <input id="sbp" type="number" placeholder="120"/>
+              <span class="unit-label">mmHg</span>
+            </div>
+            <label class="na-check">
+              <input type="checkbox" onchange="toggleVital(this,'sbp','card_sbp','120')"/>
+              Device not available
+            </label>
+          </div>
+
+          <div class="vital-card" id="card_dbp">
+            <div class="vital-card-top">
+              <div class="vital-icon blue">🩸</div>
+              <div>
+                <div class="vital-label">Diastolic BP</div>
+                <div class="vital-normal">Normal: 60–80</div>
+              </div>
+            </div>
+            <div class="input-unit" style="position:relative">
+              <input id="dbp" type="number" placeholder="80"/>
+              <span class="unit-label">mmHg</span>
+            </div>
+            <label class="na-check">
+              <input type="checkbox" onchange="toggleVital(this,'dbp','card_dbp','80')"/>
+              Device not available
+            </label>
+          </div>
+
+          <div class="vital-card" id="card_hr">
+            <div class="vital-card-top">
+              <div class="vital-icon red">❤️</div>
+              <div>
+                <div class="vital-label">Heart Rate</div>
+                <div class="vital-normal">Normal: 60–100</div>
+              </div>
+            </div>
+            <div class="input-unit" style="position:relative">
+              <input id="hr" type="number" placeholder="80"/>
+              <span class="unit-label">bpm</span>
+            </div>
+            <label class="na-check">
+              <input type="checkbox" onchange="toggleVital(this,'hr','card_hr','80')"/>
+              Device not available
+            </label>
+          </div>
+
+          <div class="vital-card" id="card_rr">
+            <div class="vital-card-top">
+              <div class="vital-icon blue">💨</div>
+              <div>
+                <div class="vital-label">Respiratory Rate</div>
+                <div class="vital-normal">Normal: 12–20</div>
+              </div>
+            </div>
+            <div class="input-unit" style="position:relative">
+              <input id="rr" type="number" placeholder="18"/>
+              <span class="unit-label">/min</span>
+            </div>
+            <label class="na-check">
+              <input type="checkbox" onchange="toggleVital(this,'rr','card_rr','18')"/>
+              Device not available
+            </label>
+          </div>
+
+          <div class="vital-card" id="card_bt">
+            <div class="vital-card-top">
+              <div class="vital-icon orange">🌡️</div>
+              <div>
+                <div class="vital-label">Body Temperature</div>
+                <div class="vital-normal">Normal: 36.1–37.2</div>
+              </div>
+            </div>
+            <div class="input-unit" style="position:relative">
+              <input id="bt" type="number" step="0.1" placeholder="36.6"/>
+              <span class="unit-label">°C</span>
+            </div>
+            <label class="na-check">
+              <input type="checkbox" onchange="toggleVital(this,'bt','card_bt','36.6')"/>
+              Device not available
+            </label>
+          </div>
+
+          <div class="vital-card" id="card_saturation">
+            <div class="vital-card-top">
+              <div class="vital-icon green">🫁</div>
+              <div>
+                <div class="vital-label">Oxygen Saturation</div>
+                <div class="vital-normal">Normal: 95–100%</div>
+              </div>
+            </div>
+            <div class="input-unit" style="position:relative">
+              <input id="saturation" type="number" placeholder="98"/>
+              <span class="unit-label">SpO2</span>
+            </div>
+            <label class="na-check">
+              <input type="checkbox" onchange="toggleVital(this,'saturation','card_saturation','97')"/>
+              Device not available
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="form-footer">
+        <div class="footer-note">🔒 All patient data is encrypted and stored securely</div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-clear" onclick="clearForm()">Clear Form</button>
+          <button class="btn-submit" onclick="submitPatient()">
+            🧠 Run AI Triage Assessment
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-panel" id="result_panel">
+      <div class="result-header" id="result_header">
+        <div class="result-esi" id="result_esi_box">–</div>
+        <div class="result-info">
+          <h3 id="result_label">–</h3>
+          <p id="result_detail">–</p>
+        </div>
+        <div class="result-actions">
+          <a href="/dashboard" class="btn-dashboard">📊 View Dashboard →</a>
+        </div>
+      </div>
+      <!-- Warning Box -->
+      <div id="warning_box" style="display:none; padding:14px 24px; border-top:1px solid rgba(255,255,255,0.15);">
+        <div id="warning_inner" style="border-radius:8px; padding:12px 16px; font-size:13px; font-weight:500; display:flex; align-items:flex-start; gap:10px;"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // Clock
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toLocaleTimeString('en-IN', {hour12: false});
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // Track which fields are NA
+  const naFields = {};
+
+  function toggleVital(checkbox, fieldId, cardId, fallback) {
+    const input  = document.getElementById(fieldId);
+    const card   = document.getElementById(cardId);
+    const label  = checkbox.closest('label');
+
+    if (checkbox.checked) {
+      naFields[fieldId] = fallback;
+      input.value       = fallback;
+      input.disabled    = true;
+      input.title       = `Using fallback value: ${fallback}`;
+      card.classList.add('na-active');
+
+      // Show fallback badge
+      let badge = card.querySelector('.na-badge');
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'na-badge';
+        card.appendChild(badge);
+      }
+      badge.textContent = `⚠️ Fallback: ${fallback}`;
+      label.style.color = '#D97706';
+    } else {
+      delete naFields[fieldId];
+      input.value    = '';
+      input.disabled = false;
+      input.title    = '';
+      card.classList.remove('na-active');
+      const badge = card.querySelector('.na-badge');
+      if (badge) badge.remove();
+      label.style.color = '';
+    }
+  }
+
+  function clearForm() {
+    document.querySelectorAll('input[type=text], input[type=number]').forEach(i => {
+      i.value = ''; i.disabled = false; i.title = '';
+    });
+    document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+    document.querySelectorAll('.vital-card').forEach(c => c.classList.remove('na-active'));
+    document.querySelectorAll('.na-badge').forEach(b => b.remove());
+    document.querySelectorAll('.na-check').forEach(l => l.style.color = '');
+    document.getElementById('nrs_pain').value = 0;
+    document.getElementById('pain_val').textContent = '0';
+    document.getElementById('result_panel').classList.remove('show');
+    Object.keys(naFields).forEach(k => delete naFields[k]);
+  }
+
+  async function submitPatient() {
+    const data = {
+      name:          document.getElementById('name').value,
+      age:           document.getElementById('age').value,
+      arrival_mode:  document.getElementById('arrival_mode').value,
+      chief_complain:document.getElementById('chief_complain').value,
+      pain:          document.getElementById('pain').value,
+      nrs_pain:      document.getElementById('nrs_pain').value,
+      sbp:           document.getElementById('sbp').value,
+      dbp:           document.getElementById('dbp').value,
+      hr:            document.getElementById('hr').value,
+      rr:            document.getElementById('rr').value,
+      bt:            document.getElementById('bt').value,
+      saturation:    document.getElementById('saturation').value,
+      na_fields:     Object.keys(naFields),  // Tell backend which are fallbacks
+    };
+
+    try {
+      const res = await fetch('/predict', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+
+      if (json.success) {
+        const r = json.result;
+        const colorMap = {
+          orange: 'result-orange', yellow: 'result-yellow',
+          green: 'result-green', gray: 'result-gray', red: 'result-red',
+        };
+        const panel  = document.getElementById('result_panel');
+        const header = document.getElementById('result_header');
+        header.className = 'result-header ' + (colorMap[r.color] || 'result-orange');
+        document.getElementById('result_esi_box').textContent = r.esi_level;
+        document.getElementById('result_label').textContent =
+          `ESI Level ${r.esi_level} — ${r.esi_label}`;
+        document.getElementById('result_detail').textContent =
+          `Patient: ${r.name} | Age: ${r.age} | Complaint: ${r.complaint} | ${new Date().toLocaleTimeString()}`;
+
+        // ── Smart Warning Box ──────────────────────
+        const warnBox   = document.getElementById('warning_box');
+        const warnInner = document.getElementById('warning_inner');
+
+        if (r.warning && r.warning_level === 'high') {
+          // RED — critical, doctor must verify
+          warnBox.style.display = 'block';
+          warnInner.style.background = 'rgba(220,38,38,0.25)';
+          warnInner.style.border     = '1.5px solid rgba(220,38,38,0.6)';
+          warnInner.style.color      = '#FFE4E4';
+          warnInner.innerHTML = `<span style="font-size:18px;flex-shrink:0">🚨</span>
+            <div><strong>HIGH RISK — Doctor Must Verify</strong><br/>
+            <span style="font-size:12px;opacity:0.85">${r.warning}</span></div>`;
+        } else if (r.warning && r.warning_level === 'low') {
+          // YELLOW — informational only
+          warnBox.style.display = 'block';
+          warnInner.style.background = 'rgba(217,119,6,0.2)';
+          warnInner.style.border     = '1.5px solid rgba(217,119,6,0.5)';
+          warnInner.style.color      = '#FEF3C7';
+          warnInner.innerHTML = `<span style="font-size:18px;flex-shrink:0">ℹ️</span>
+            <div><strong>Low Risk Fallback Used</strong><br/>
+            <span style="font-size:12px;opacity:0.85">${r.warning}</span></div>`;
+        } else {
+          warnBox.style.display = 'none';
+        }
+
+        panel.classList.add('show');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        alert('Assessment Error: ' + json.error);
+      }
+    } catch(e) {
+      alert('Connection error. Please ensure the Flask server is running.');
+    }
+  }
+</script>
+</body>
+</html>

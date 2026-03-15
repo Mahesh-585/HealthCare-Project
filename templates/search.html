@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PraanAI — Search Patients</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --red: #C8102E; --red-dark: #9B0B22; --red-light: #F9E8EB;
+      --navy: #0A1628; --navy2: #112240;
+      --white: #FFFFFF; --gray-50: #F8FAFC; --gray-100: #F1F5F9;
+      --gray-200: #E2E8F0; --gray-400: #94A3B8; --gray-600: #475569;
+      --gray-700: #334155; --gray-800: #1E293B;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--gray-50); color: var(--gray-800); min-height: 100vh; }
+
+    .topbar { background: var(--navy); color: var(--gray-400); font-size: 12px; padding: 6px 32px; display: flex; justify-content: space-between; align-items: center; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #22C55E; display: inline-block; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    header { background: var(--navy); padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 68px; border-bottom: 3px solid var(--red); position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .logo { display: flex; align-items: center; gap: 14px; }
+    .logo-icon { width: 42px; height: 42px; background: var(--red); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .logo-text h1 { font-size: 18px; font-weight: 700; color: var(--white); }
+    .logo-text p { font-size: 11px; color: var(--gray-400); letter-spacing: 0.5px; text-transform: uppercase; }
+    nav { display: flex; gap: 4px; }
+    nav a { color: var(--gray-400); font-size: 13px; font-weight: 500; padding: 8px 16px; border-radius: 8px; text-decoration: none; transition: all 0.2s; }
+    nav a:hover { background: rgba(255,255,255,0.08); color: var(--white); }
+    nav a.active { background: var(--red); color: var(--white); }
+    .time-badge { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: var(--white); padding: 6px 14px; border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 13px; }
+
+    .page { display: flex; min-height: calc(100vh - 100px); }
+
+    /* Sidebar */
+    .sidebar { width: 240px; background: var(--white); border-right: 1px solid var(--gray-200); padding: 20px 0; flex-shrink: 0; }
+    .sidebar-label { font-size: 10px; font-weight: 700; color: var(--gray-400); letter-spacing: 1.2px; text-transform: uppercase; padding: 0 24px; margin-bottom: 8px; }
+    .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; margin: 0 8px; border-radius: 8px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--gray-600); text-decoration: none; transition: all 0.15s; }
+    .sidebar-item:hover { background: var(--gray-100); }
+    .sidebar-item.active { background: var(--red-light); color: var(--red); }
+    .sidebar-divider { height: 1px; background: var(--gray-200); margin: 12px 16px; }
+
+    /* Main */
+    .main { flex: 1; padding: 28px 32px; }
+
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--gray-400); margin-bottom: 8px; }
+    .breadcrumb span { color: var(--gray-800); font-weight: 500; }
+    .page-title h2 { font-size: 22px; font-weight: 700; }
+    .page-title p { font-size: 13px; color: var(--gray-400); margin-top: 3px; }
+
+    /* Search Card */
+    .search-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: 14px; overflow: hidden; margin: 20px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .search-card-header { background: linear-gradient(135deg, var(--navy), var(--navy2)); padding: 18px 24px; display: flex; align-items: center; gap: 12px; }
+    .search-card-header h3 { font-size: 15px; font-weight: 700; color: var(--white); }
+    .search-card-header p { font-size: 12px; color: rgba(255,255,255,0.5); }
+
+    .search-body { padding: 24px; }
+
+    /* Search bar */
+    .search-bar-wrap { position: relative; margin-bottom: 20px; }
+    .search-bar-wrap input {
+      width: 100%; height: 50px;
+      border: 2px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 0 50px 0 48px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; color: var(--gray-800);
+      background: var(--white); outline: none;
+      transition: all 0.2s;
+    }
+    .search-bar-wrap input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(200,16,46,0.08); }
+    .search-bar-wrap input::placeholder { color: var(--gray-400); }
+    .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 18px; }
+    .search-clear { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: var(--gray-200); border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px; color: var(--gray-600); display: none; align-items: center; justify-content: center; transition: all 0.15s; }
+    .search-clear:hover { background: var(--gray-400); color: white; }
+    .search-clear.show { display: flex; }
+
+    /* Filter Row */
+    .filter-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .filter-btn {
+      padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--gray-200);
+      background: var(--white); font-family: 'DM Sans', sans-serif;
+      font-size: 12px; font-weight: 600; color: var(--gray-600);
+      cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+    }
+    .filter-btn:hover { border-color: var(--gray-400); color: var(--gray-800); }
+    .filter-btn.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+    .filter-btn.esi-2.active { background: #DC2626; border-color: #DC2626; }
+    .filter-btn.esi-3.active { background: #D97706; border-color: #D97706; }
+    .filter-btn.esi-4.active { background: #16A34A; border-color: #16A34A; }
+    .filter-btn.esi-5.active { background: #6B7280; border-color: #6B7280; }
+
+    /* Date filters */
+    .date-row { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
+    .date-row label { font-size: 12px; font-weight: 600; color: var(--gray-600); }
+    .date-row input[type=date] {
+      height: 36px; border: 1.5px solid var(--gray-200); border-radius: 8px;
+      padding: 0 12px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+      color: var(--gray-800); outline: none; background: var(--white);
+      transition: border-color 0.2s;
+    }
+    .date-row input[type=date]:focus { border-color: var(--red); }
+    .btn-date-clear { background: transparent; border: 1.5px solid var(--gray-200); padding: 0 14px; height: 36px; border-radius: 8px; font-size: 12px; font-weight: 600; color: var(--gray-600); cursor: pointer; transition: all 0.15s; }
+    .btn-date-clear:hover { border-color: var(--red); color: var(--red); }
+
+    /* Stats mini */
+    .result-stats { display: flex; gap: 16px; margin-bottom: 16px; font-size: 13px; color: var(--gray-600); align-items: center; }
+    .result-count { font-weight: 700; color: var(--gray-800); font-family: 'DM Mono', monospace; }
+
+    /* Table */
+    .table-wrap { border-radius: 10px; overflow: hidden; border: 1px solid var(--gray-200); }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: var(--navy); }
+    thead th { padding: 11px 16px; text-align: left; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.7); letter-spacing: 0.8px; text-transform: uppercase; }
+    tbody tr { border-bottom: 1px solid var(--gray-100); transition: background 0.15s; cursor: pointer; }
+    tbody tr:hover { background: #F0F7FF; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody td { padding: 13px 16px; font-size: 13.5px; color: var(--gray-700); vertical-align: middle; }
+
+    .patient-name { font-weight: 600; color: var(--gray-800); }
+    .patient-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+    .esi-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+    .esi-2-badge { background: #FEE2E2; color: #DC2626; }
+    .esi-3-badge { background: #FEF3C7; color: #D97706; }
+    .esi-4-badge { background: #DCFCE7; color: #16A34A; }
+    .esi-5-badge { background: var(--gray-100); color: var(--gray-600); }
+
+    .warn-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+    .warn-high { background: #FEE2E2; color: #DC2626; }
+    .warn-low  { background: #FEF3C7; color: #D97706; }
+
+    .empty-state { padding: 60px 24px; text-align: center; color: var(--gray-400); }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; margin-top: 6px; }
+    .empty-state strong { color: var(--gray-600); }
+
+    /* Detail Modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .modal { background: var(--white); border-radius: 16px; width: 560px; max-width: 95vw; overflow: hidden; animation: slideUp 0.25s ease; }
+    @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    .modal-header { background: var(--navy); padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .modal-header h3 { font-size: 16px; font-weight: 700; color: var(--white); }
+    .modal-close { background: rgba(255,255,255,0.1); border: none; color: white; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+    .modal-close:hover { background: var(--red); }
+    .modal-body { padding: 24px; }
+    .modal-esi { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 10px; font-size: 16px; font-weight: 800; margin-bottom: 20px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .detail-item { background: var(--gray-50); border-radius: 8px; padding: 12px; }
+    .detail-item .d-label { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+    .detail-item .d-val { font-size: 14px; font-weight: 600; color: var(--gray-800); font-family: 'DM Mono', monospace; }
+    .modal-warn { margin-top: 16px; padding: 12px 16px; border-radius: 8px; font-size: 12px; font-weight: 500; display: flex; gap: 8px; align-items: flex-start; }
+    .modal-warn.high { background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+    .modal-warn.low  { background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span><span class="dot"></span>&nbsp; PraanAI Engine Active</span>
+  <span>🏥 Government General Hospital, Hyderabad &nbsp;|&nbsp; Emergency Department</span>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏥</div>
+    <div class="logo-text">
+      <h1>PraanAI</h1>
+      <p>Emergency Triage Management System</p>
+    </div>
+  </div>
+  <nav>
+    <a href="/">Patient Intake</a>
+    <a href="/dashboard">Live Dashboard</a>
+    <a href="/search" class="active">Search Patients</a>
+    <a href="#">Reports</a>
+  </nav>
+  <div class="time-badge" id="clock">--:--:--</div>
+</header>
+
+<div class="page">
+  <aside class="sidebar">
+    <div style="padding:0 0 16px">
+      <div class="sidebar-label">Navigation</div>
+      <a class="sidebar-item" href="/">📋 Patient Intake</a>
+      <a class="sidebar-item" href="/dashboard">📊 Live Queue</a>
+      <a class="sidebar-item active" href="/search">🔍 Search Patient</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div style="padding:0 0 16px">
+      <div class="sidebar-label">Quick Filters</div>
+      <div class="sidebar-item" onclick="filterESI(2)" style="cursor:pointer">
+        <span style="width:10px;height:10px;border-radius:3px;background:#DC2626;flex-shrink:0"></span> Emergent only
+      </div>
+      <div class="sidebar-item" onclick="filterESI(3)" style="cursor:pointer">
+        <span style="width:10px;height:10px;border-radius:3px;background:#D97706;flex-shrink:0"></span> Urgent only
+      </div>
+      <div class="sidebar-item" onclick="filterESI(0)" style="cursor:pointer">
+        <span style="width:10px;height:10px;border-radius:3px;background:#6B7280;flex-shrink:0"></span> Show All
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-item" onclick="filterWarning()" style="cursor:pointer">
+        🚨 Needs Verification
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="breadcrumb">🏠 Home <span>›</span> Emergency Department <span>›</span> <span>Search Patients</span></div>
+    <div class="page-title">
+      <h2>🔍 Search Patients</h2>
+      <p>Search by name, ESI level, date, or filter by verification status</p>
+    </div>
+
+    <div class="search-card">
+      <div class="search-card-header">
+        <div>
+          <h3>Patient Search & History</h3>
+          <p>All patient records from the current session</p>
+        </div>
+      </div>
+      <div class="search-body">
+
+        <!-- Search bar -->
+        <div class="search-bar-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search_input" placeholder="Search by patient name or chief complaint..."
+            oninput="onSearchInput(this.value)"/>
+          <button class="search-clear" id="clear_btn" onclick="clearSearch()">✕</button>
+        </div>
+
+        <!-- ESI Filters -->
+        <div class="filter-row">
+          <span style="font-size:12px;font-weight:600;color:var(--gray-400);align-self:center">Filter:</span>
+          <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">All Patients</button>
+          <button class="filter-btn esi-2" id="filter-2" onclick="setFilter(2)">🔴 ESI 2 Emergent</button>
+          <button class="filter-btn esi-3" id="filter-3" onclick="setFilter(3)">🟡 ESI 3 Urgent</button>
+          <button class="filter-btn esi-4" id="filter-4" onclick="setFilter(4)">🟢 ESI 4 Less Urgent</button>
+          <button class="filter-btn esi-5" id="filter-5" onclick="setFilter(5)">⚪ ESI 5 Non Urgent</button>
+          <button class="filter-btn" id="filter-warn" onclick="setFilter('warn')" style="border-color:#DC2626;color:#DC2626">🚨 Needs Verification</button>
+        </div>
+
+        <!-- Date Filter -->
+        <div class="date-row">
+          <label>Date Range:</label>
+          <input type="date" id="date_from" onchange="applyFilters()"/>
+          <span style="font-size:12px;color:var(--gray-400)">to</span>
+          <input type="date" id="date_to" onchange="applyFilters()"/>
+          <button class="btn-date-clear" onclick="clearDates()">Clear Dates</button>
+        </div>
+
+        <!-- Result count -->
+        <div class="result-stats">
+          Showing <span class="result-count" id="result_count">0</span> patients
+          <span id="filter_label" style="color:var(--gray-400)"></span>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Patient Name</th>
+                <th>Age</th>
+                <th>Chief Complaint</th>
+                <th>ESI Level</th>
+                <th>Status</th>
+                <th>Date & Time</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="search_table">
+              <tr><td colspan="8">
+                <div class="empty-state">
+                  <div class="icon">⏳</div>
+                  <p>Loading patient records...</p>
+                </div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modal_overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal_title">Patient Details</h3>
+      <button class="modal-close" onclick="document.getElementById('modal_overlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-esi" id="modal_esi_badge">–</div>
+      <div class="detail-grid" id="modal_grid"></div>
+      <div id="modal_warn_box"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Clock
+  setInterval(() => {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('en-IN', {hour12: false});
+  }, 1000);
+
+  let allPatients = [];
+  let activeFilter = 'all';
+  let searchQuery  = '';
+
+  const esiClass = { 2:'esi-2-badge', 3:'esi-3-badge', 4:'esi-4-badge', 5:'esi-5-badge' };
+  const esiLabel = { 2:'EMERGENT', 3:'URGENT', 4:'LESS URGENT', 5:'NON URGENT' };
+
+  async function loadPatients() {
+    try {
+      const res = await fetch('/patients');
+      allPatients = await res.json();
+      applyFilters();
+    } catch(e) {
+      document.getElementById('search_table').innerHTML = `
+        <tr><td colspan="8">
+          <div class="empty-state">
+            <div class="icon">❌</div>
+            <p>Could not load records. Ensure Flask server is running.</p>
+          </div>
+        </td></tr>`;
+    }
+  }
+
+  function onSearchInput(val) {
+    searchQuery = val.toLowerCase();
+    document.getElementById('clear_btn').classList.toggle('show', val.length > 0);
+    applyFilters();
+  }
+
+  function clearSearch() {
+    document.getElementById('search_input').value = '';
+    searchQuery = '';
+    document.getElementById('clear_btn').classList.remove('show');
+    applyFilters();
+  }
+
+  function clearDates() {
+    document.getElementById('date_from').value = '';
+    document.getElementById('date_to').value = '';
+    applyFilters();
+  }
+
+  function setFilter(f) {
+    activeFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    const id = f === 'all' ? 'filter-all' : f === 'warn' ? 'filter-warn' : `filter-${f}`;
+    document.getElementById(id)?.classList.add('active');
+    applyFilters();
+  }
+
+  function filterESI(level) {
+    setFilter(level === 0 ? 'all' : level);
+  }
+
+  function filterWarning() { setFilter('warn'); }
+
+  function applyFilters() {
+    const dateFrom = document.getElementById('date_from').value;
+    const dateTo   = document.getElementById('date_to').value;
+
+    let filtered = allPatients.filter(p => {
+      // Search filter
+      if (searchQuery) {
+        const nameMatch      = (p.name || '').toLowerCase().includes(searchQuery);
+        const complaintMatch = (p.complaint || '').toLowerCase().includes(searchQuery);
+        if (!nameMatch && !complaintMatch) return false;
+      }
+      // ESI filter
+      if (activeFilter !== 'all' && activeFilter !== 'warn') {
+        if (p.esi_level !== activeFilter) return false;
+      }
+      // Warning filter
+      if (activeFilter === 'warn') {
+        if (p.warning_level !== 'high') return false;
+      }
+      // Date filter
+      if (dateFrom || dateTo) {
+        const pDate = new Date(p.timestamp).toISOString().split('T')[0];
+        if (dateFrom && pDate < dateFrom) return false;
+        if (dateTo   && pDate > dateTo)   return false;
+      }
+      return true;
+    });
+
+    renderTable(filtered);
+    document.getElementById('result_count').textContent = filtered.length;
+
+    // Filter label
+    const labels = { all:'', 2:'— Emergent only', 3:'— Urgent only', 4:'— Less Urgent only', 5:'— Non Urgent only', warn:'— Needs Verification' };
+    document.getElementById('filter_label').textContent = labels[activeFilter] || '';
+  }
+
+  function renderTable(patients) {
+    const tbody = document.getElementById('search_table');
+    if (patients.length === 0) {
+      tbody.innerHTML = `
+        <tr><td colspan="8">
+          <div class="empty-state">
+            <div class="icon">🔍</div>
+            <strong>No patients found</strong>
+            <p>Try a different name, complaint, or adjust filters</p>
+          </div>
+        </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = patients.map((p, i) => {
+      const time = p.timestamp
+        ? new Date(p.timestamp).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:true})
+        : '—';
+
+      const warnBadge = p.warning_level === 'high'
+        ? `<br/><span class="warn-badge warn-high">🚨 Verify</span>`
+        : p.warning_level === 'low'
+        ? `<br/><span class="warn-badge warn-low">ℹ️ Fallback</span>`
+        : '';
+
+      return `<tr onclick="openModal(${i}, ${JSON.stringify(patients).indexOf(JSON.stringify(p))})">
+        <td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--gray-400)">${i+1}</td>
+        <td>
+          <div class="patient-name">${p.name || '—'}</div>
+          <div class="patient-sub">${p.complaint || '—'}</div>
+        </td>
+        <td style="font-family:'DM Mono',monospace;font-weight:600">${p.age || '—'}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--gray-600)">${p.complaint || '—'}</td>
+        <td><span class="esi-badge ${esiClass[p.esi_level]||'esi-5-badge'}">ESI ${p.esi_level} — ${p.esi_label || esiLabel[p.esi_level] || '—'}</span></td>
+        <td>${warnBadge || '<span style="font-size:12px;color:#16A34A;font-weight:600">✅ Complete</span>'}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gray-400)">${time}</td>
+        <td><button onclick="event.stopPropagation();openPatientModal(${allPatients.indexOf(p)})"
+          style="background:var(--navy);color:white;border:none;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
+          View
+        </button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function openPatientModal(idx) {
+    const p = allPatients[idx];
+    if (!p) return;
+
+    document.getElementById('modal_title').textContent = `Patient: ${p.name}`;
+
+    // ESI badge
+    const esiColors = { 2:'#FEE2E2', 3:'#FEF3C7', 4:'#DCFCE7', 5:'#F1F5F9' };
+    const esiText   = { 2:'#DC2626', 3:'#D97706', 4:'#16A34A', 5:'#6B7280' };
+    const lvl = p.esi_level;
+    document.getElementById('modal_esi_badge').style.background = esiColors[lvl] || '#F1F5F9';
+    document.getElementById('modal_esi_badge').style.color      = esiText[lvl]   || '#6B7280';
+    document.getElementById('modal_esi_badge').textContent =
+      `ESI ${lvl} — ${p.esi_label || esiLabel[lvl]}`;
+
+    // Detail grid
+    const time = p.timestamp
+      ? new Date(p.timestamp).toLocaleString('en-IN', {dateStyle:'medium', timeStyle:'short'})
+      : '—';
+
+    document.getElementById('modal_grid').innerHTML = `
+      <div class="detail-item"><div class="d-label">Full Name</div><div class="d-val" style="font-family:'DM Sans',sans-serif">${p.name || '—'}</div></div>
+      <div class="detail-item"><div class="d-label">Age</div><div class="d-val">${p.age || '—'} years</div></div>
+      <div class="detail-item"><div class="d-label">Chief Complaint</div><div class="d-val" style="font-family:'DM Sans',sans-serif;font-size:13px">${p.complaint || '—'}</div></div>
+      <div class="detail-item"><div class="d-label">Arrival Time</div><div class="d-val" style="font-size:12px">${time}</div></div>
+      <div class="detail-item"><div class="d-label">Fallback Fields</div><div class="d-val" style="font-family:'DM Sans',sans-serif;font-size:12px">${p.na_fields && p.na_fields !== 'None' ? p.na_fields : 'None — All measured ✅'}</div></div>
+      <div class="detail-item"><div class="d-label">Warning Level</div><div class="d-val" style="font-family:'DM Sans',sans-serif">${p.warning_level === 'high' ? '🚨 High — Verify' : p.warning_level === 'low' ? 'ℹ️ Low' : '✅ None'}</div></div>
+    `;
+
+    // Warning box
+    const warnBox = document.getElementById('modal_warn_box');
+    if (p.warning_level === 'high') {
+      warnBox.innerHTML = `<div class="modal-warn high">🚨 <div><strong>Doctor must verify manually</strong><br/><span style="font-size:11px">Critical fields (${p.na_fields}) used fallback values — AI decision may not be fully accurate.</span></div></div>`;
+    } else if (p.warning_level === 'low') {
+      warnBox.innerHTML = `<div class="modal-warn low">ℹ️ <div><strong>Low-risk fallback used</strong><br/><span style="font-size:11px">Non-critical fields (${p.na_fields}) used fallback values — AI decision is reliable.</span></div></div>`;
+    } else {
+      warnBox.innerHTML = '';
+    }
+
+    document.getElementById('modal_overlay').classList.add('open');
+  }
+
+  function closeModal(e) {
+    if (e.target === document.getElementById('modal_overlay')) {
+      document.getElementById('modal_overlay').classList.remove('open');
+    }
+  }
+
+  // Load on page start
+  loadPatients();
+</script>
+</body>
+</html>

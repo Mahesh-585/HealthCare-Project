@@ -1,0 +1,6 @@
+praanai_env/ 
+praanai.db 
+model/ 
+dataset/ 
+__pycache__/ 
+*.pyc 

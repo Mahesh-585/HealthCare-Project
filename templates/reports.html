@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PraanAI — Reports & Analytics</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --red:#C8102E; --red-dark:#9B0B22; --red-light:#F9E8EB;
+      --navy:#0A1628; --navy2:#112240;
+      --white:#FFFFFF; --gray-50:#F8FAFC; --gray-100:#F1F5F9;
+      --gray-200:#E2E8F0; --gray-400:#94A3B8; --gray-600:#475569;
+      --gray-700:#334155; --gray-800:#1E293B;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:var(--gray-50);color:var(--gray-800);min-height:100vh}
+
+    /* Topbar */
+    .topbar{background:var(--navy);color:var(--gray-400);font-size:12px;padding:6px 32px;display:flex;justify-content:space-between;align-items:center}
+    .dot{width:7px;height:7px;border-radius:50%;background:#22C55E;display:inline-block;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+    /* Header */
+    header{background:var(--navy);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:68px;border-bottom:3px solid var(--red);position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+    .logo{display:flex;align-items:center;gap:14px}
+    .logo-icon{width:42px;height:42px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+    .logo-text h1{font-size:18px;font-weight:700;color:var(--white)}
+    .logo-text p{font-size:11px;color:var(--gray-400);letter-spacing:.5px;text-transform:uppercase}
+    nav{display:flex;gap:4px}
+    nav a{color:var(--gray-400);font-size:13px;font-weight:500;padding:8px 16px;border-radius:8px;text-decoration:none;transition:all .2s}
+    nav a:hover{background:rgba(255,255,255,.08);color:var(--white)}
+    nav a.active{background:var(--red);color:var(--white)}
+    .time-badge{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:var(--white);padding:6px 14px;border-radius:8px;font-family:'DM Mono',monospace;font-size:13px}
+
+    /* Layout */
+    .page{display:flex;min-height:calc(100vh - 100px)}
+    .sidebar{width:240px;background:var(--white);border-right:1px solid var(--gray-200);padding:20px 0;flex-shrink:0}
+    .sidebar-label{font-size:10px;font-weight:700;color:var(--gray-400);letter-spacing:1.2px;text-transform:uppercase;padding:0 24px;margin-bottom:8px}
+    .sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 16px;margin:0 8px;border-radius:8px;font-size:13.5px;font-weight:500;color:var(--gray-600);text-decoration:none;transition:all .15s}
+    .sidebar-item:hover{background:var(--gray-100)}
+    .sidebar-item.active{background:var(--red-light);color:var(--red)}
+    .sidebar-divider{height:1px;background:var(--gray-200);margin:12px 16px}
+    .main{flex:1;padding:28px 32px;overflow-y:auto}
+
+    /* Page header */
+    .breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-400);margin-bottom:8px}
+    .breadcrumb span{color:var(--gray-800);font-weight:500}
+    .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px}
+    .page-title h2{font-size:22px;font-weight:700}
+    .page-title p{font-size:13px;color:var(--gray-400);margin-top:3px}
+    .btn-print{background:var(--navy);color:white;border:none;padding:10px 20px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .2s}
+    .btn-print:hover{background:var(--red)}
+
+    /* Stat Cards */
+    .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+    .stat-card{background:var(--white);border-radius:12px;border:1px solid var(--gray-200);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:transform .2s}
+    .stat-card:hover{transform:translateY(-2px)}
+    .stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px}
+    .stat-val{font-size:36px;font-weight:800;font-family:'DM Mono',monospace;line-height:1}
+    .stat-label{font-size:12px;color:var(--gray-400);margin-top:4px;font-weight:500}
+    .stat-sub{font-size:11px;margin-top:8px;padding-top:8px;border-top:1px solid var(--gray-100);color:var(--gray-600)}
+
+    /* Time Saved Banner */
+    .time-banner{background:linear-gradient(135deg,var(--navy) 0%,#1a3a6b 100%);border-radius:14px;padding:24px 28px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 16px rgba(10,22,40,.2)}
+    .tb-left h3{font-size:13px;font-weight:600;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+    .tb-left .big{font-size:52px;font-weight:900;font-family:'DM Mono',monospace;color:var(--white);line-height:1}
+    .tb-left .sub{font-size:13px;color:rgba(255,255,255,.5);margin-top:4px}
+    .tb-right{display:flex;gap:16px}
+    .tb-mini{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 18px;text-align:center;min-width:100px}
+    .tb-mini .val{font-size:22px;font-weight:800;font-family:'DM Mono',monospace;color:var(--white)}
+    .tb-mini .lbl{font-size:11px;color:rgba(255,255,255,.5);margin-top:4px}
+
+    /* Charts */
+    .charts-row{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;margin-bottom:24px}
+    .chart-card{background:var(--white);border-radius:14px;border:1px solid var(--gray-200);padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .chart-card h4{font-size:14px;font-weight:700;margin-bottom:3px}
+    .chart-card .sub{font-size:12px;color:var(--gray-400);margin-bottom:18px}
+    .chart-wrap{position:relative;height:260px}
+
+    /* Fallback Summary */
+    .fallback-section{background:var(--white);border-radius:14px;border:1px solid var(--gray-200);padding:22px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .fallback-section h4{font-size:14px;font-weight:700;margin-bottom:3px}
+    .fallback-section .sub{font-size:12px;color:var(--gray-400);margin-bottom:18px}
+    .fallback-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .fb-item{background:var(--gray-50);border-radius:10px;padding:14px 16px;border:1px solid var(--gray-200)}
+    .fb-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .fb-name{font-size:13px;font-weight:600}
+    .fb-count{font-size:20px;font-weight:800;font-family:'DM Mono',monospace}
+    .fb-bar-bg{height:5px;background:var(--gray-200);border-radius:3px;overflow:hidden;margin-bottom:5px}
+    .fb-bar{height:5px;border-radius:3px;transition:width .8s ease}
+    .fb-note{font-size:10px;color:var(--gray-400)}
+
+    /* Compare table */
+    .compare-card{background:var(--white);border-radius:14px;border:1px solid var(--gray-200);padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .compare-card h4{font-size:14px;font-weight:700;margin-bottom:3px}
+    .compare-card .sub{font-size:12px;color:var(--gray-400);margin-bottom:18px}
+    .ctable{width:100%;border-collapse:collapse}
+    .ctable th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.7px;border-bottom:2px solid var(--gray-200)}
+    .ctable td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+    .ctable tr:last-child td{border-bottom:none;font-weight:700;background:var(--gray-50)}
+    .vm{color:#DC2626;font-weight:600;font-family:'DM Mono',monospace}
+    .vp{color:#16A34A;font-weight:600;font-family:'DM Mono',monospace}
+    .vs{color:var(--navy);font-weight:700;font-family:'DM Mono',monospace}
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span><span class="dot"></span>&nbsp; PraanAI Engine Active</span>
+  <span>🏥 Government General Hospital, Hyderabad &nbsp;|&nbsp; Emergency Department</span>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏥</div>
+    <div class="logo-text"><h1>PraanAI</h1><p>Emergency Triage Management System</p></div>
+  </div>
+  <nav>
+    <a href="/">Patient Intake</a>
+    <a href="/dashboard">Live Dashboard</a>
+    <a href="/search">Search Patients</a>
+    <a href="/reports" class="active">Reports</a>
+  </nav>
+  <div class="time-badge" id="clock">--:--:--</div>
+</header>
+
+<div class="page">
+  <aside class="sidebar">
+    <div style="padding:0 0 16px">
+      <div class="sidebar-label">Navigation</div>
+      <a class="sidebar-item" href="/">📋 Patient Intake</a>
+      <a class="sidebar-item" href="/dashboard">📊 Live Queue</a>
+      <a class="sidebar-item" href="/search">🔍 Search Patient</a>
+      <a class="sidebar-item active" href="/reports">📈 Reports</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div style="padding:0 0 16px">
+      <div class="sidebar-label">Jump To</div>
+      <a class="sidebar-item" href="#stats">📊 Patient Stats</a>
+      <a class="sidebar-item" href="#timesaved">⏱️ Time Saved</a>
+      <a class="sidebar-item" href="#charts">📉 ESI Charts</a>
+      <a class="sidebar-item" href="#fallback">⚠️ Fallback Usage</a>
+      <a class="sidebar-item" href="#compare">🆚 Manual vs AI</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="breadcrumb">🏠 Home <span>›</span> Emergency Department <span>›</span> <span>Reports & Analytics</span></div>
+    <div class="page-header">
+      <div class="page-title">
+        <h2>📈 Reports & Analytics</h2>
+        <p id="report_sub">Loading report...</p>
+      </div>
+      <button class="btn-print" onclick="window.print()">🖨️ Print Report</button>
+    </div>
+
+    <!-- ── 1. Stat Cards ── -->
+    <div class="stats-row" id="stats">
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:#EDE9FE">🧑‍⚕️</div>
+          <span style="font-size:11px;font-weight:700;color:var(--gray-400);background:var(--gray-100);padding:3px 8px;border-radius:20px">ALL TIME</span>
+        </div>
+        <div class="stat-val" id="s_total" style="color:var(--navy)">0</div>
+        <div class="stat-label">Total Patients Assessed</div>
+        <div class="stat-sub">Today: <strong id="s_today">0</strong> patients</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:#FEE2E2">🚨</div>
+          <span style="font-size:11px;font-weight:700;color:#DC2626;background:#FEE2E2;padding:3px 8px;border-radius:20px">ESI 2</span>
+        </div>
+        <div class="stat-val" id="s_e2" style="color:#DC2626">0</div>
+        <div class="stat-label">Emergent — within 10 min</div>
+        <div class="stat-sub" id="s_e2p">0% of total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:#FEF3C7">⚠️</div>
+          <span style="font-size:11px;font-weight:700;color:#D97706;background:#FEF3C7;padding:3px 8px;border-radius:20px">ESI 3</span>
+        </div>
+        <div class="stat-val" id="s_e3" style="color:#D97706">0</div>
+        <div class="stat-label">Urgent — within 30 min</div>
+        <div class="stat-sub" id="s_e3p">0% of total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:#FEF3C7">⚠️</div>
+          <span style="font-size:11px;font-weight:700;color:#D97706;background:#FEF3C7;padding:3px 8px;border-radius:20px">FALLBACK</span>
+        </div>
+        <div class="stat-val" id="s_fb" style="color:#D97706">0</div>
+        <div class="stat-label">Used Fallback Values</div>
+        <div class="stat-sub">🚨 High risk: <strong id="s_fbh">0</strong></div>
+      </div>
+    </div>
+
+    <!-- ── 2. Time Saved Banner ── -->
+    <div class="time-banner" id="timesaved">
+      <div class="tb-left">
+        <h3>⏱️ Total Time Saved by PraanAI</h3>
+        <div class="big" id="ts_min">0</div>
+        <div class="sub">minutes saved vs manual triage this session</div>
+      </div>
+      <div class="tb-right">
+        <div class="tb-mini">
+          <div class="val">13 min</div>
+          <div class="lbl">Saved per patient</div>
+        </div>
+        <div class="tb-mini">
+          <div class="val" id="ts_hrs">0 hrs</div>
+          <div class="lbl">Total hours saved</div>
+        </div>
+        <div class="tb-mini">
+          <div class="val" id="ts_yearly">0 days</div>
+          <div class="lbl">Projected per year</div>
+        </div>
+        <div class="tb-mini">
+          <div class="val">65%</div>
+          <div class="lbl">Model accuracy</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 3. Charts ── -->
+    <div class="charts-row" id="charts">
+      <div class="chart-card">
+        <h4>ESI Level Distribution — Bar Chart</h4>
+        <div class="sub">Number of patients per triage severity level</div>
+        <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>ESI Level Distribution — Donut Chart</h4>
+        <div class="sub">Proportional breakdown of all triage levels</div>
+        <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ── 4. Fallback Summary ── -->
+    <div class="fallback-section" id="fallback">
+      <h4>⚠️ Fallback Usage Summary</h4>
+      <div class="sub">How many times each vital sign used an average fallback value because the device was unavailable</div>
+      <div class="fallback-grid" id="fb_grid"></div>
+    </div>
+
+    <!-- ── 5. Manual vs AI ── -->
+    <div class="compare-card" id="compare">
+      <h4>🆚 Manual Triage vs PraanAI — Time Comparison</h4>
+      <div class="sub">Based on <span id="cmp_n">0</span> patients assessed in this session</div>
+      <table class="ctable">
+        <thead>
+          <tr>
+            <th>Process Step</th>
+            <th>Manual Triage</th>
+            <th>PraanAI</th>
+            <th>Time Saved</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Vitals Measurement</td><td class="vm">85 sec</td><td class="vp">85 sec</td><td class="vs">0 sec</td></tr>
+          <tr><td>Nurse writes vitals on paper</td><td class="vm">2 min</td><td class="vp">30 sec</td><td class="vs">1.5 min</td></tr>
+          <tr><td>Doctor reviews &amp; decides ESI</td><td class="vm">5 min</td><td class="vp">1 sec (AI)</td><td class="vs">~5 min</td></tr>
+          <tr><td>Queue update &amp; communication</td><td class="vm">5 min</td><td class="vp">Instant</td><td class="vs">~5 min</td></tr>
+          <tr><td>Paper carry + verbal relay</td><td class="vm">3 min</td><td class="vp">0 (digital)</td><td class="vs">3 min</td></tr>
+          <tr>
+            <td>TOTAL per patient</td>
+            <td class="vm">~15–20 min</td>
+            <td class="vp">&lt; 2 min</td>
+            <td class="vs">~13 min</td>
+          </tr>
+          <tr>
+            <td>TOTAL this session (<span id="cmp_n2">0</span> patients)</td>
+            <td class="vm" id="cmp_manual">0 min</td>
+            <td class="vp" id="cmp_praanai">0 min</td>
+            <td class="vs" id="cmp_saved">0 min saved</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  setInterval(() => {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('en-IN', {hour12:false});
+  }, 1000);
+
+  let barInst = null, donutInst = null;
+
+  async function loadReport() {
+    try {
+      const res = await fetch('/patients');
+      const patients = await res.json();
+      const total = patients.length;
+
+      // ESI counts
+      const esi = {2:0,3:0,4:0,5:0};
+      let fbCount = 0, fbHigh = 0;
+      const fields = {sbp:0,dbp:0,hr:0,rr:0,bt:0,saturation:0};
+
+      const today = new Date().toISOString().split('T')[0];
+      let todayCount = 0;
+
+      patients.forEach(p => {
+        if (esi[p.esi_level] !== undefined) esi[p.esi_level]++;
+        if (p.timestamp && p.timestamp.startsWith(today)) todayCount++;
+        if (p.na_fields && p.na_fields !== 'None') {
+          fbCount++;
+          if (p.warning_level === 'high') fbHigh++;
+          p.na_fields.split(',').forEach(f => {
+            const k = f.trim().toLowerCase();
+            if (fields[k] !== undefined) fields[k]++;
+          });
+        }
+      });
+
+      const pct = n => total > 0 ? Math.round(n/total*100) : 0;
+
+      // Stat cards
+      document.getElementById('s_total').textContent = total;
+      document.getElementById('s_today').textContent = todayCount;
+      document.getElementById('s_e2').textContent    = esi[2];
+      document.getElementById('s_e2p').textContent   = `${pct(esi[2])}% of total`;
+      document.getElementById('s_e3').textContent    = esi[3];
+      document.getElementById('s_e3p').textContent   = `${pct(esi[3])}% of total`;
+      document.getElementById('s_fb').textContent    = fbCount;
+      document.getElementById('s_fbh').textContent   = fbHigh;
+
+      document.getElementById('report_sub').textContent =
+        `Session report — ${total} patients | Generated ${new Date().toLocaleString('en-IN')}`;
+
+      // Time saved
+      const minSaved = total * 13;
+      const hrs = (minSaved / 60).toFixed(1);
+      const yearlyDays = todayCount > 0 ? Math.round((total/todayCount)*365*13/(60*24)) : 0;
+      document.getElementById('ts_min').textContent    = minSaved;
+      document.getElementById('ts_hrs').textContent    = `${hrs} hrs`;
+      document.getElementById('ts_yearly').textContent = `${yearlyDays} days`;
+
+      // Compare table
+      document.getElementById('cmp_n').textContent      = total;
+      document.getElementById('cmp_n2').textContent     = total;
+      document.getElementById('cmp_manual').textContent = `${total * 17} min`;
+      document.getElementById('cmp_praanai').textContent= `${total * 2} min`;
+      document.getElementById('cmp_saved').textContent  = `${minSaved} min saved`;
+
+      // Bar chart
+      const barCtx = document.getElementById('barChart').getContext('2d');
+      if (barInst) barInst.destroy();
+      barInst = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels: ['ESI 2\nEmergent','ESI 3\nUrgent','ESI 4\nLess Urgent','ESI 5\nNon Urgent'],
+          datasets: [{
+            label: 'Patients',
+            data: [esi[2], esi[3], esi[4], esi[5]],
+            backgroundColor: ['rgba(220,38,38,.15)','rgba(217,119,6,.15)','rgba(22,163,74,.15)','rgba(107,114,128,.15)'],
+            borderColor:     ['#DC2626','#D97706','#16A34A','#6B7280'],
+            borderWidth: 2, borderRadius: 8,
+          }]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{display:false} },
+          scales:{
+            y:{ beginAtZero:true, ticks:{stepSize:1,color:'#94A3B8'}, grid:{color:'#F1F5F9'} },
+            x:{ ticks:{color:'#94A3B8',font:{size:11}}, grid:{display:false} }
+          }
+        }
+      });
+
+      // Donut chart
+      const donutCtx = document.getElementById('donutChart').getContext('2d');
+      if (donutInst) donutInst.destroy();
+      donutInst = new Chart(donutCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['ESI 2 Emergent','ESI 3 Urgent','ESI 4 Less Urgent','ESI 5 Non Urgent'],
+          datasets: [{
+            data: [esi[2], esi[3], esi[4], esi[5]],
+            backgroundColor: ['#DC2626','#D97706','#16A34A','#9CA3AF'],
+            borderWidth: 3, borderColor:'#FFFFFF', hoverOffset:6,
+          }]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          cutout:'68%',
+          plugins:{
+            legend:{ position:'bottom', labels:{font:{size:11},padding:12,color:'#475569'} }
+          }
+        }
+      });
+
+      // Fallback grid
+      const fLabels  = {sbp:'Systolic BP',dbp:'Diastolic BP',hr:'Heart Rate',rr:'Resp. Rate',bt:'Body Temp',saturation:'Oxygen Sat.'};
+      const fColors  = {sbp:'#DC2626',dbp:'#DC2626',saturation:'#DC2626',hr:'#D97706',rr:'#16A34A',bt:'#D97706'};
+      const fRisk    = {sbp:true,dbp:true,saturation:true,hr:false,rr:false,bt:false};
+      const maxVal   = Math.max(...Object.values(fields), 1);
+
+      document.getElementById('fb_grid').innerHTML = Object.entries(fields).map(([k,v]) => `
+        <div class="fb-item">
+          <div class="fb-top">
+            <div class="fb-name">${fLabels[k]}</div>
+            <div class="fb-count" style="color:${fColors[k]}">${v}</div>
+          </div>
+          <div class="fb-bar-bg">
+            <div class="fb-bar" style="width:${Math.round(v/maxVal*100)}%;background:${fColors[k]}"></div>
+          </div>
+          <div class="fb-note">${v} fallback use${v!==1?'s':''} ${fRisk[k]?'⚠️ High Risk Field':''}</div>
+        </div>`).join('');
+
+    } catch(e) {
+      document.getElementById('report_sub').textContent = 'Could not load. Ensure Flask is running.';
+    }
+  }
+
+  loadReport();
+  setInterval(loadReport, 30000);
+</script>
+</body>
+</html>
